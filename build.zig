@@ -5,13 +5,15 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     const upstream = b.dependency("upstream", .{});
-    const libexternals = b.addStaticLibrary(.{
+    const libexternals = b.addLibrary(.{
         .name = "externals",
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
+            .link_libcpp = true,
+        }),
     });
-    libexternals.linkLibCpp();
-    libexternals.addCSourceFiles(.{
+    libexternals.root_module.addCSourceFiles(.{
         .root = upstream.path("externals"),
         .files = &libexternals_src,
         .flags = &.{},
@@ -20,75 +22,62 @@ pub fn build(b: *std.Build) void {
         upstream.path("externals/tinyxml2/tinyxml2.h"),
         "tinyxml2.h",
     );
-    libexternals.addIncludePath(upstream.path("externals/tinyxml2"));
+    libexternals.root_module.addIncludePath(upstream.path("externals/tinyxml2"));
     libexternals.installHeader(
         upstream.path("externals/simplecpp/simplecpp.h"),
         "simplecpp.h",
     );
-    libexternals.addIncludePath(upstream.path("externals/simplecpp"));
+    libexternals.root_module.addIncludePath(upstream.path("externals/simplecpp"));
     libexternals.installHeader(
         upstream.path("externals/picojson/picojson.h"),
         "picojson.h",
     );
 
-    const libcppcheck = b.addStaticLibrary(.{
+    const libcppcheck = b.addLibrary(.{
         .name = "cppcheck",
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
+            .link_libcpp = true,
+        }),
     });
-    libcppcheck.linkLibrary(libexternals);
-    libcppcheck.linkLibCpp();
-    libcppcheck.addCSourceFiles(.{
+    libcppcheck.root_module.linkLibrary(libexternals);
+    libcppcheck.root_module.addCSourceFiles(.{
         .root = upstream.path("lib"),
         .files = &libcppcheck_src,
         .flags = &.{},
     });
-    libcppcheck.addIncludePath(upstream.path("lib"));
+    libcppcheck.root_module.addIncludePath(upstream.path("lib"));
     libcppcheck.installHeadersDirectory(upstream.path("lib"), "", .{});
 
     const exe = b.addExecutable(.{
         .name = "cppcheck",
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
+            .link_libcpp = true,
+        }),
     });
-    exe.linkLibCpp();
-    exe.addCSourceFiles(.{
+    exe.root_module.addCSourceFiles(.{
         .root = upstream.path("cli"),
         .files = &cppcheck_src,
         .flags = &.{},
     });
-    exe.addIncludePath(upstream.path("cli"));
-    exe.linkLibrary(libcppcheck);
-
+    exe.root_module.addIncludePath(upstream.path("cli"));
+    exe.root_module.linkLibrary(libcppcheck);
+    b.installDirectory(.{
+        .source_dir = upstream.path("cfg"),
+        .install_dir = .{ .custom = "cfg" },
+        .install_subdir = "",
+    });
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
-    if (b.args) |args| {
-        run_cmd.addArgs(args);
-    }
+    run_cmd.addPassthruArgs();
 
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
-
-    const lib_unit_tests = b.addTest(.{
-        .root_source_file = upstream.path("src/root.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-
-    const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
-
-    const exe_unit_tests = b.addTest(.{
-        .root_source_file = upstream.path("src/main.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-
-    const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
-    const test_step = b.step("test", "Run unit tests");
-    test_step.dependOn(&run_lib_unit_tests.step);
-    test_step.dependOn(&run_exe_unit_tests.step);
 }
 
 const libexternals_src = [_][]const u8{
