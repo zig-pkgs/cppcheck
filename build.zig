@@ -16,7 +16,7 @@ pub fn build(b: *std.Build) void {
     libexternals.root_module.addCSourceFiles(.{
         .root = upstream.path("externals"),
         .files = &libexternals_src,
-        .flags = &.{},
+        .flags = &.{ "-Uunix", "-Ulinux" },
     });
     libexternals.installHeader(
         upstream.path("externals/tinyxml2/tinyxml2.h"),
@@ -45,9 +45,16 @@ pub fn build(b: *std.Build) void {
     libcppcheck.root_module.addCSourceFiles(.{
         .root = upstream.path("lib"),
         .files = &libcppcheck_src,
-        .flags = &.{},
+        .flags = &.{ "-Uunix", "-Ulinux" },
     });
     libcppcheck.root_module.addIncludePath(upstream.path("lib"));
+    libcppcheck.root_module.addIncludePath(upstream.path("externals/picojson"));
+    libcppcheck.root_module.addIncludePath(upstream.path("frontend"));
+    libcppcheck.root_module.addCSourceFiles(.{
+        .root = upstream.path("frontend"),
+        .files = &.{"frontend.cpp"},
+        .flags = &.{ "-Uunix", "-Ulinux" },
+    });
     libcppcheck.installHeadersDirectory(upstream.path("lib"), "", .{});
 
     const exe = b.addExecutable(.{
@@ -61,14 +68,16 @@ pub fn build(b: *std.Build) void {
     exe.root_module.addCSourceFiles(.{
         .root = upstream.path("cli"),
         .files = &cppcheck_src,
-        .flags = &.{},
+        .flags = &.{ "-Uunix", "-Ulinux" },
     });
     exe.root_module.addIncludePath(upstream.path("cli"));
+    exe.root_module.addIncludePath(upstream.path("frontend"));
+    exe.root_module.addIncludePath(upstream.path("externals/picojson"));
     exe.root_module.linkLibrary(libcppcheck);
     b.installDirectory(.{
         .source_dir = upstream.path("cfg"),
-        .install_dir = .{ .custom = "cfg" },
-        .install_subdir = "",
+        .install_dir = .{ .bin = {} },
+        .install_subdir = "cfg",
     });
     b.installArtifact(exe);
 
@@ -89,19 +98,19 @@ const libcppcheck_src = [_][]const u8{
     "addoninfo.cpp",
     "analyzerinfo.cpp",
     "astutils.cpp",
-    "check.cpp",
     "check64bit.cpp",
     "checkassert.cpp",
     "checkautovariables.cpp",
     "checkbool.cpp",
-    "checkboost.cpp",
     "checkbufferoverrun.cpp",
     "checkclass.cpp",
     "checkcondition.cpp",
     "checkers.cpp",
+    "checkersidmapping.cpp",
     "checkersreport.cpp",
     "checkexceptionsafety.cpp",
     "checkfunctions.cpp",
+    "checkimpl.cpp",
     "checkinternal.cpp",
     "checkio.cpp",
     "checkleakautovar.cpp",
@@ -109,6 +118,7 @@ const libcppcheck_src = [_][]const u8{
     "checknullpointer.cpp",
     "checkother.cpp",
     "checkpostfixoperator.cpp",
+    "checks.cpp",
     "checksizeof.cpp",
     "checkstl.cpp",
     "checkstring.cpp",
@@ -123,6 +133,7 @@ const libcppcheck_src = [_][]const u8{
     "ctu.cpp",
     "errorlogger.cpp",
     "errortypes.cpp",
+    "findtoken.cpp",
     "forwardanalyzer.cpp",
     "fwdanalysis.cpp",
     "importproject.cpp",
@@ -136,8 +147,11 @@ const libcppcheck_src = [_][]const u8{
     "platform.cpp",
     "preprocessor.cpp",
     "programmemory.cpp",
+    "regex.cpp",
     "reverseanalyzer.cpp",
+    "sarifreport.cpp",
     "settings.cpp",
+    "standards.cpp",
     "summaries.cpp",
     "suppressions.cpp",
     "symboldatabase.cpp",
@@ -149,16 +163,19 @@ const libcppcheck_src = [_][]const u8{
     "utils.cpp",
     "valueflow.cpp",
     "vfvalue.cpp",
+    "vf_analyzers.cpp",
+    "vf_common.cpp",
+    "vf_settokenvalue.cpp",
 };
 
 const cppcheck_src = [_][]const u8{
     "cmdlineparser.cpp",
     "cppcheckexecutor.cpp",
-    "cppcheckexecutorseh.cpp",
     "executor.cpp",
     "filelister.cpp",
     "main.cpp",
     "processexecutor.cpp",
+    "sehwrapper.cpp",
     "signalhandler.cpp",
     "singleexecutor.cpp",
     "stacktrace.cpp",

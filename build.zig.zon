@@ -1,12 +1,12 @@
 .{
     .name = .cppcheck,
-    .version = "2.14.0",
+    .version = "2.22.0",
     .fingerprint = 0x26a0fed5ad6b2251,
     .minimum_zig_version = "0.17.0",
     .dependencies = .{
         .upstream = .{
-            .url = "https://github.com/danmar/cppcheck/archive/refs/tags/2.14.0.tar.gz",
-            .hash = "N-V-__8AAIthSwEX6KVf06zew7WNL0qzU_Mf42MuxpJc1C48",
+            .url = "https://github.com/cppcheck-opensource/cppcheck/archive/refs/tags/2.22.0.tar.gz",
+            .hash = "N-V-__8AAE3zdwGIODMpV2KWJDcMm7K7BVqDXr9ErkwAKuIt",
         },
     },
     .paths = .{
